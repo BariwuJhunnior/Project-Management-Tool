@@ -16,10 +16,11 @@ app.use(cors());
 
 //Routes
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/projects", require("./routes/projectRoutes"));
+app.use("/api/tasks", require("./routes/taskRoutes"));
 
-//Root Test Route
 app.get("/", (req, res) => {
-  res.send("Project Management API is running...");
+  res.send("API is running...");
 });
 
 const PORT = process.env.PORT || 5000;

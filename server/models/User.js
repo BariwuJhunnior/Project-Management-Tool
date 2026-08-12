@@ -11,6 +11,15 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    whatsApp: {
+      type: String,
+      required: true,
+      trim: true,
+      validate: {
+        validator: (v) => /^\+?[1-9]\d{9,14}$/.test(v),
+        message: (props) => `${props.value} is not a valid WhatsApp number!`,
+      },
+    },
     password: { type: String, required: true },
     role: {
       type: String,

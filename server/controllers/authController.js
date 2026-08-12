@@ -11,19 +11,20 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, whatsApp, role } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({ name, email, password, whatsApp, role });
 
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      whatsApp: user.whatsApp,
       role: user.role,
       token: generateToken(user._id),
     });
@@ -45,6 +46,7 @@ const loginUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        whatsApp: user.whatsApp,
         role: user.role,
         token: generateToken(user._id),
       });
