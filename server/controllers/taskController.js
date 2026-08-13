@@ -20,7 +20,7 @@ const createTask = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    //Ensure creator has access to the target project
+    // Ensure creator has access to the target project
     const isMember = project.members.some(
       (m) => m.toString() === req.user._id.toString(),
     );
@@ -60,7 +60,7 @@ const getTasksByProject = async (req, res) => {
       return res.status(404).json({ message: "Project not found." });
     }
 
-    //Verify user membership in project
+    // Verify user membership in project
     const isMember = project.members.some(
       (m) => m.toString() === req.user._id.toString(),
     );
@@ -101,7 +101,7 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Authorization check: User must be a member of the project
+    // Authorization check: User must be a member of the project or admin
     const isMember = task.project.members.some(
       (m) => m.toString() === req.user._id.toString(),
     );
@@ -132,7 +132,7 @@ const updateTask = async (req, res) => {
 
     const task = await Task.findById(req.params.id);
     if (!task) {
-      return res.status(404).json({ message: "Task nto found" });
+      return res.status(404).json({ message: "Task not found" });
     }
 
     if (title) task.title = title;
@@ -153,9 +153,9 @@ const updateTask = async (req, res) => {
   }
 };
 
-// @desc    Delete a task
+// @desc    Delete a task (Soft delete)
 // @route   DELETE /api/tasks/:id
-// @access  Private
+// @access  Private (Admin & Project Manager only via middleware)
 const deleteTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -163,20 +163,11 @@ const deleteTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Ensure only the creator or an admin can delete the task
-    if (
-      task.createdBy.toString() !== req.user._id.toString() &&
-      req.user.role !== "admin"
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this task" });
-    }
-
     task.isDeleted = true;
     task.deletedAt = new Date();
     await task.save();
-    res.json({ message: "Task deleted successfully" });
+
+    res.json({ message: "Task deleted successfully", taskId: req.params.id });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

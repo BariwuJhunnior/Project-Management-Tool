@@ -36,11 +36,13 @@ const protect = async (req, res, next) => {
   }
 };
 
-//Restrict access to specific roles (e.g., authorize("admin"))
+// Restrict access to specific roles (e.g., authorize("admin", "project_manager"))
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Access denied" });
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        message: `Access denied. Role '${req.user?.role}' is not authorized.`,
+      });
     }
     next();
   };
