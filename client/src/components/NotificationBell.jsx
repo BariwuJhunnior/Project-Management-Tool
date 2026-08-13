@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../context/NotificationContext";
+import { Bell, BellRing, Megaphone } from "lucide-react";
 
 export const NotificationBell = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } =
@@ -26,7 +27,7 @@ export const NotificationBell = () => {
         className="relative p-2 rounded-xl bg-white/80 border border-white/90 hover:bg-white transition shadow-xs text-slate-700"
         aria-label="Notifications"
       >
-        <span className="text-lg">🔔</span>
+        <Bell className="w-5 h-5" />
 
         {/* Unread Badge Counter */}
         {unreadCount > 0 && (
@@ -65,8 +66,9 @@ export const NotificationBell = () => {
           {/* Notification List */}
           <div className="max-h-80 overflow-y-auto divide-y divide-slate-100/80">
             {notifications.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 font-medium">
-                🔔 No notifications yet
+              <div className="p-8 text-center text-xs text-slate-400 font-medium flex flex-col items-center gap-2">
+                <BellRing className="w-6 h-6 text-slate-300" />
+                <span>No notifications yet</span>
               </div>
             ) : (
               notifications.map((n) => (
@@ -80,10 +82,12 @@ export const NotificationBell = () => {
                   }`}
                 >
                   {/* Sender Avatar or Icon */}
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
-                    {n.sender?.name
-                      ? n.sender.name.charAt(0).toUpperCase()
-                      : "📣"}
+                  <div className="w-8 h-8 rounded-full bg-linear-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                    {n.sender?.name ? (
+                      n.sender.name.charAt(0).toUpperCase()
+                    ) : (
+                      <Megaphone className="w-4 h-4" />
+                    )}
                   </div>
 
                   {/* Notification Content */}
@@ -101,7 +105,7 @@ export const NotificationBell = () => {
 
                   {/* Unread Status Dot */}
                   {!n.read && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 flex-shrink-0 mt-2" />
+                    <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0 mt-2" />
                   )}
                 </div>
               ))

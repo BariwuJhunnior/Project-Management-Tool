@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { io } from "socket.io-client";
 import api from "../api/axios";
 import { useAuth } from "./AuthContext";
@@ -11,11 +17,10 @@ export const NotificationProvider = ({ children }) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [socket, setSocket] = useState(null);
 
   // 1. Fetch existing notifications on load
-  const fetchNotifications = async () => {
-    if (!user) return;
+  const fetchNotifications = useCallback(async () => {
+    if (!user?._id) return;
     try {
       const { data } = await api.get("/notifications");
       setNotifications(data.notifications || []);
@@ -23,11 +28,11 @@ export const NotificationProvider = ({ children }) => {
     } catch (err) {
       console.error("Error fetching notifications:", err);
     }
-  };
+  }, [user?._id]);
 
   // 2. Initialize Socket.io Connection when authenticated
   useEffect(() => {
-    if (!user) return;
+    if (!user?._id) return;
 
     fetchNotifications();
 
@@ -47,12 +52,10 @@ export const NotificationProvider = ({ children }) => {
       setUnreadCount((prev) => prev + 1);
     });
 
-    setSocket(newSocket);
-
     return () => {
       newSocket.disconnect();
     };
-  }, [user]);
+  }, [user?._id, fetchNotifications]); // Add fetchNotifications to dependency array
 
   // Mark a single item as read
   const markAsRead = async (id) => {
