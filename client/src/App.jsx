@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
-import { KanbanBoard } from "./components/KanbanBoard";
+import KanbanBoard from "./pages/KanbanBoard";
 
 // Layout wrapper for authenticated pages
 const AppLayout = ({ children }) => {
