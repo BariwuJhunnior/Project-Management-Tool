@@ -1,5 +1,6 @@
 const Task = require("../models/Task");
 const Project = require("../models/Project");
+const { createAndSendNotification } = require("../utils/notificationHelper");
 
 // @desc    Create a new task within a project
 // @route   POST /api/tasks
@@ -20,7 +21,6 @@ const createTask = async (req, res) => {
       return res.status(404).json({ message: "Project not found" });
     }
 
-    // Ensure creator has access to the target project
     const isMember = project.members.some(
       (m) => m.toString() === req.user._id.toString(),
     );
@@ -42,6 +42,20 @@ const createTask = async (req, res) => {
       "assignees",
       "name email role whatsApp",
     );
+
+    // Notify assigned members
+    if (assignees && assignees.length > 0) {
+      for (const recipientId of assignees) {
+        await createAndSendNotification(req, {
+          recipient: recipientId,
+          type: "TASK_ASSIGNED",
+          task: task._id,
+          project: projectId,
+          message: `You were assigned to task "${title}".`,
+        });
+      }
+    }
+
     res.status(201).json(populatedTask);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -60,7 +74,6 @@ const getTasksByProject = async (req, res) => {
       return res.status(404).json({ message: "Project not found." });
     }
 
-    // Verify user membership in project
     const isMember = project.members.some(
       (m) => m.toString() === req.user._id.toString(),
     );
@@ -101,7 +114,6 @@ const updateTaskStatus = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    // Authorization check: User must be a member of the project or admin
     const isMember = task.project.members.some(
       (m) => m.toString() === req.user._id.toString(),
     );
@@ -111,11 +123,33 @@ const updateTaskStatus = async (req, res) => {
         .json({ message: "Not authorized to update this task" });
     }
 
+    const previousStatus = task.status;
+
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true, runValidators: true },
     ).populate("assignees", "name email role whatsApp");
+
+    // Trigger Notification if moved to 'done'
+    if (previousStatus !== "done" && status === "done") {
+      const recipients = Array.from(
+        new Set([
+          ...(updatedTask.assignees?.map((a) => a._id.toString()) || []),
+          updatedTask.createdBy?.toString(),
+        ]),
+      ).filter(Boolean);
+
+      for (const recipientId of recipients) {
+        await createAndSendNotification(req, {
+          recipient: recipientId,
+          type: "TASK_MOVED_DONE",
+          task: updatedTask._id,
+          project: updatedTask.project,
+          message: `Task "${updatedTask.title}" has been moved to Done.`,
+        });
+      }
+    }
 
     res.json(updatedTask);
   } catch (error) {
@@ -135,6 +169,9 @@ const updateTask = async (req, res) => {
       return res.status(404).json({ message: "Task not found" });
     }
 
+    const previousAssignees = task.assignees.map((a) => a.toString());
+    const previousStatus = task.status;
+
     if (title) task.title = title;
     if (description !== undefined) task.description = description;
     if (assignees) task.assignees = assignees;
@@ -147,6 +184,42 @@ const updateTask = async (req, res) => {
       "name email role whatsApp",
     );
 
+    // Notify newly assigned members
+    if (assignees) {
+      const newlyAssigned = assignees.filter(
+        (id) => !previousAssignees.includes(id.toString()),
+      );
+      for (const recipientId of newlyAssigned) {
+        await createAndSendNotification(req, {
+          recipient: recipientId,
+          type: "TASK_ASSIGNED",
+          task: updatedTask._id,
+          project: updatedTask.project,
+          message: `You were assigned to task "${updatedTask.title}".`,
+        });
+      }
+    }
+
+    // Notify when moved to done via full update form
+    if (previousStatus !== "done" && status === "done") {
+      const recipients = Array.from(
+        new Set([
+          ...(populated.assignees?.map((a) => a._id.toString()) || []),
+          populated.createdBy?.toString(),
+        ]),
+      ).filter(Boolean);
+
+      for (const recipientId of recipients) {
+        await createAndSendNotification(req, {
+          recipient: recipientId,
+          type: "TASK_MOVED_DONE",
+          task: populated._id,
+          project: populated.project,
+          message: `Task "${populated.title}" has been moved to Done.`,
+        });
+      }
+    }
+
     res.json(populated);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -155,7 +228,7 @@ const updateTask = async (req, res) => {
 
 // @desc    Delete a task (Soft delete)
 // @route   DELETE /api/tasks/:id
-// @access  Private (Admin & Project Manager only via middleware)
+// @access  Private (Admin & Project Manager only)
 const deleteTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
