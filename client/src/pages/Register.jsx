@@ -7,6 +7,7 @@ export const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("developer"); // Default role
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +27,7 @@ export const Register = () => {
     setSubmitting(true);
 
     try {
-      await register(name, email, password);
+      await register(name, email, password, role);
       navigate("/dashboard");
     } catch (err) {
       setError(
@@ -74,6 +75,23 @@ export const Register = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="developer">Developer</option>
+              <option value="project_manager">Project Manager</option>
+              <option value="admin">Admin</option>
+              <option value="client">Client</option>
+              <option value="ui/ux">UI/UX</option>
+            </select>
           </div>
 
           <div>

@@ -6,6 +6,7 @@ import { BoardHeader } from "../components/kanbanBoard/BoardHeader";
 import { FilterBar } from "../components/kanbanBoard/FilterBar";
 import { KanbanColumn } from "../components/kanbanBoard/KanbanColumn";
 import { NewTaskModal } from "../components/kanbanBoard/NewTaskModal";
+import { NewProjectModal } from "../components/kanbanBoard/NewProjectModal"; // New import
 import { TaskDetailModal } from "../components/kanbanBoard/TaskDetailModal";
 import { COLUMNS } from "../components/kanbanBoard/constants";
 
@@ -21,6 +22,9 @@ const KanbanBoard = ({ projectId: initialProjectId }) => {
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // New Project Modal State
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,6 +92,12 @@ const KanbanBoard = ({ projectId: initialProjectId }) => {
 
     fetchBoardData();
   }, [activeProjectId]);
+
+  const handleProjectCreated = (newProject) => {
+    setProjectsList((prev) => [newProject, ...prev]);
+    setActiveProjectId(newProject._id);
+    setIsProjectModalOpen(false);
+  };
 
   // Drag & Drop Handlers
   const handleDragStart = (e, taskId) => {
@@ -224,6 +234,26 @@ const KanbanBoard = ({ projectId: initialProjectId }) => {
     }
   };
 
+  // Delete Project Handler
+  const handleDeleteProject = async (projectId) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to permanently delete this project and all its tasks?",
+      )
+    )
+      return;
+
+    try {
+      await api.delete(`/projects/${projectId}`);
+      const updatedProjects = projectsList.filter((p) => p._id !== projectId);
+      setProjectsList(updatedProjects);
+
+      // Switch to another project or handle empty state
+      setActiveProjectId(updatedProjects[0]?._id || "");
+    } catch (err) {
+      console.error("Error deleting project:", err);
+    }
+  };
   // Delete Task Handler
   const handleDeleteTask = async () => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
@@ -247,6 +277,7 @@ const KanbanBoard = ({ projectId: initialProjectId }) => {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-100 via-slate-200 to-indigo-50 p-6 text-slate-800">
       <BoardHeader
+        currentUser={user}
         project={project}
         projectsList={projectsList}
         activeProjectId={activeProjectId}
@@ -262,6 +293,8 @@ const KanbanBoard = ({ projectId: initialProjectId }) => {
         isClient={isClient}
         isAdminOrManager={isAdminOrManager}
         onNewTaskClick={() => setIsTaskModalOpen(true)}
+        onDeleteProject={handleDeleteProject}
+        onNewProjectClick={() => setIsProjectModalOpen(true)} // Passed here
       />
 
       <FilterBar
@@ -301,6 +334,17 @@ const KanbanBoard = ({ projectId: initialProjectId }) => {
         onClose={() => setSelectedTeammate(null)}
       />
 
+      {/* New Project Modal */}
+      {isProjectModalOpen && (
+        <NewProjectModal
+          isOpen={isProjectModalOpen}
+          onClose={() => setIsProjectModalOpen(false)}
+          onProjectCreated={handleProjectCreated}
+          currentUser={user}
+        />
+      )}
+
+      {/* New Task Modal */}
       {isTaskModalOpen && (
         <NewTaskModal
           project={project}
@@ -312,6 +356,7 @@ const KanbanBoard = ({ projectId: initialProjectId }) => {
         />
       )}
 
+      {/* Task Detail Modal */}
       {activeTaskModal && (
         <TaskDetailModal
           task={activeTaskModal}

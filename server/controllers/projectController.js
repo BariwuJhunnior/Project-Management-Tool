@@ -106,9 +106,40 @@ const getProjectById = async (req, res) => {
   }
 };
 
+// @desc    Delete a project
+// @route   DELETE /api/projects/:id
+// @access  Private (Admin/Project Manager & Creator only)
+const deleteProject = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    const isCreator = project.createdBy.toString() === req.user._id.toString();
+    const isAdminOrManager =
+      req.user.role === "admin" || req.user.role === "project_manager";
+
+    if (!isCreator || !isAdminOrManager) {
+      return res
+        .status(403)
+        .json({ message: "User not authorized to delete this project" });
+    }
+
+    await Task.deleteMany({ project: req.params.id });
+    await project.deleteOne();
+
+    res.json({ message: "Project and associated tasks removed successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   createProject,
   getProjects,
   getProjectById,
   updateProject,
+  deleteProject,
 };

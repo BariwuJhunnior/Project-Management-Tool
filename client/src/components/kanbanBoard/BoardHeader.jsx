@@ -1,7 +1,8 @@
-import { Plus } from "lucide-react";
+import { Plus, FolderPlus, Trash2 } from "lucide-react";
 import { TeammatesDropdown } from "./TeammatesDropdown";
 
 export const BoardHeader = ({
+  currentUser,
   project,
   projectsList,
   activeProjectId,
@@ -12,7 +13,11 @@ export const BoardHeader = ({
   isClient,
   isAdminOrManager,
   onNewTaskClick,
+  onDeleteProject,
+  onNewProjectClick, // New prop
 }) => {
+  const canDelete =
+    isAdminOrManager && project?.createdBy?._id === currentUser?._id;
   return (
     <header className="relative z-20 mb-6 p-6 bg-white/60 border border-white/80 backdrop-blur-xl rounded-2xl shadow-lg flex flex-wrap items-center justify-between gap-4">
       <div className="space-y-1">
@@ -31,6 +36,29 @@ export const BoardHeader = ({
               </option>
             ))}
           </select>
+
+          {/* New Project Button for Admins & Project Managers */}
+          {isAdminOrManager && (
+            <button
+              onClick={onNewProjectClick}
+              className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200/60 rounded-xl text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
+              title="Create New Project"
+            >
+              <FolderPlus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Project</span>
+            </button>
+          )}
+
+          {/* Delete Project Button */}
+          {canDelete && (
+            <button
+              onClick={() => onDeleteProject(project._id)}
+              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-xl text-xs font-bold transition flex items-center space-x-1 cursor-pointer"
+              title="Delete Project"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <p className="text-sm text-slate-500 mt-1">

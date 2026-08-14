@@ -128,15 +128,25 @@ const updateTaskStatus = async (req, res) => {
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true, runValidators: true },
-    ).populate("assignees", "name email role whatsApp");
+      { returnDocument: "after", runValidators: true },
+    )
+      .populate("assignees", "name email role whatsApp")
+      .populate("createdBy", "name email role whatsApp"); // Populate createdBy here
 
-    // Trigger Notification if moved to 'done'
+    // Helper to format status for messages
+    const formatStatus = (s) =>
+      s
+        .replace(/_/g, " ")
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+
+    // Trigger Notification if moved to 'done' (existing logic)
     if (previousStatus !== "done" && status === "done") {
       const recipients = Array.from(
         new Set([
           ...(updatedTask.assignees?.map((a) => a._id.toString()) || []),
-          updatedTask.createdBy?.toString(),
+          updatedTask.createdBy?._id?.toString(), // Use _id?.toString() for consistency
         ]),
       ).filter(Boolean);
 
@@ -147,6 +157,26 @@ const updateTaskStatus = async (req, res) => {
           task: updatedTask._id,
           project: updatedTask.project,
           message: `Task "${updatedTask.title}" has been moved to Done.`,
+        });
+      }
+    }
+
+    // NEW: Trigger Notification for any status change
+    if (previousStatus !== status) {
+      const recipients = Array.from(
+        new Set([
+          ...(updatedTask.assignees?.map((a) => a._id.toString()) || []),
+          updatedTask.createdBy?._id?.toString(),
+        ]),
+      ).filter(Boolean);
+
+      for (const recipientId of recipients) {
+        await createAndSendNotification(req, {
+          recipient: recipientId,
+          type: "TASK_STATUS_UPDATED", // New notification type
+          task: updatedTask._id,
+          project: updatedTask.project,
+          message: `Task "${updatedTask.title}" moved from ${formatStatus(previousStatus)} to ${formatStatus(status)}.`,
         });
       }
     }
@@ -179,10 +209,9 @@ const updateTask = async (req, res) => {
     if (dueDate) task.dueDate = dueDate;
 
     const updatedTask = await task.save();
-    const populated = await updatedTask.populate(
-      "assignees",
-      "name email role whatsApp",
-    );
+    const populated = await updatedTask
+      .populate("assignees", "name email role whatsApp")
+      .populate("createdBy", "name email role whatsApp"); // Populate createdBy for notifications
 
     // Notify newly assigned members
     if (assignees) {
@@ -205,7 +234,7 @@ const updateTask = async (req, res) => {
       const recipients = Array.from(
         new Set([
           ...(populated.assignees?.map((a) => a._id.toString()) || []),
-          populated.createdBy?.toString(),
+          populated.createdBy?._id?.toString(), // Use _id?.toString() for consistency
         ]),
       ).filter(Boolean);
 
@@ -216,6 +245,33 @@ const updateTask = async (req, res) => {
           task: populated._id,
           project: populated.project,
           message: `Task "${populated.title}" has been moved to Done.`,
+        });
+      }
+    }
+
+    // NEW: Trigger Notification for any status change via full update form
+    if (previousStatus !== status) {
+      const recipients = Array.from(
+        new Set([
+          ...(populated.assignees?.map((a) => a._id.toString()) || []),
+          populated.createdBy?._id?.toString(),
+        ]),
+      ).filter(Boolean);
+
+      const formatStatus = (s) =>
+        s
+          .replace(/_/g, " ")
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+
+      for (const recipientId of recipients) {
+        await createAndSendNotification(req, {
+          recipient: recipientId,
+          type: "TASK_STATUS_UPDATED", // New notification type
+          task: populated._id,
+          project: populated.project,
+          message: `Task "${populated.title}" moved from ${formatStatus(previousStatus)} to ${formatStatus(status)}.`,
         });
       }
     }
