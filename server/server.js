@@ -1,35 +1,56 @@
 const express = require("express");
-const cors = require("cors");
 const dotenv = require("dotenv");
+const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-const jwt = require("jsonwebtoken");
-const connectDB = require("./config/db");
+const connectDB = require("./config/db"); // Assuming you have a DB connection setup
+const { protect } = require("./middleware/auth");
+const jwt = require("jsonwebtoken"); // Assuming this was added for Socket.IO auth
 
+// --- Load Environment Variables ---
+// This will load the .env file from the root of the 'server' directory
 dotenv.config();
 
-// Connect to Database
+// --- Database Connection ---
 connectDB();
 
+// --- Express App and HTTP Server Initialization ---
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.io
+// --- CORS Configuration ---
+// This should come before your routes
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173", // Allow your client origin
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
+// --- Middlewares ---
+app.use(express.json()); // To parse JSON bodies
+
+// --- Socket.IO Initialization ---
 const io = new Server(server, {
   cors: {
-    origin: "*", // Adjust for production origin
-    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    methods: ["GET", "POST"],
   },
 });
 
-// Middleware for Socket.io JWT Authentication
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
-  if (!token)
-    return next(new Error("Authentication failed: No token provided"));
+// Attach io instance to app to be accessible from controllers
+app.set("io", io);
 
+// Socket.IO middleware for JWT Authentication
+io.use(async (socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) {
+    return next(new Error("Authentication failed: No token provided"));
+  }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Attach user ID to socket for later use
     socket.userId = decoded.id || decoded._id;
     next();
   } catch (err) {
@@ -47,25 +68,14 @@ io.on("connection", (socket) => {
   });
 });
 
-// Make io accessible across req.app
-app.set("socketio", io);
-
-// Middleware
-app.use(express.json());
-app.use(cors());
-
-// Routes
+// --- API Routes ---
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/projects", require("./routes/projectRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
-app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/notifications", require("./controllers/notificationRoutes"));
 
-app.get("/", (req, res) => {
-  res.send("API is running...");
-});
-
+// --- Server Listening ---
 const PORT = process.env.PORT || 5000;
-
-server.listen(PORT, () => {
-  console.log(`Server running on port: ${PORT}`);
-});
+server.listen(PORT, () =>
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`),
+);

@@ -81,6 +81,23 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  // Delete a single notification
+  const deleteNotification = async (id) => {
+    try {
+      // Optimistically update the UI
+      const notificationToRemove = notifications.find((n) => n._id === id);
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+      if (notificationToRemove && !notificationToRemove.read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+
+      // Make the API call
+      await api.delete(`/notifications/${id}`);
+    } catch (err) {
+      console.error("Failed to delete notification:", err);
+      fetchNotifications(); // Re-fetch to sync state on error
+    }
+  };
   return (
     <NotificationContext.Provider
       value={{
@@ -88,6 +105,7 @@ export const NotificationProvider = ({ children }) => {
         unreadCount,
         markAsRead,
         markAllAsRead,
+        deleteNotification,
         fetchNotifications,
       }}
     >

@@ -1,5 +1,6 @@
 const Project = require("../models/Project");
 const Task = require("../models/Task");
+const { createAndSendNotification } = require("../utils/notificationHelper");
 
 // @desc     Create a new project
 // @route    POST /api/projects
@@ -24,6 +25,22 @@ const createProject = async (req, res) => {
       "members",
       "name email role whatsApp",
     );
+
+    // --- NOTIFICATION LOGIC ---
+    // Notify all members who were added to the project, except the creator.
+    if (populatedProject && uniqueMembers && uniqueMembers.length > 0) {
+      for (const memberId of uniqueMembers) {
+        if (memberId.toString() !== req.user._id.toString()) {
+          await createAndSendNotification(req, {
+            recipient: memberId,
+            type: "PROJECT_INVITE",
+            project: populatedProject._id,
+            message: `You have been added to the project "${populatedProject.title}" by ${req.user.name}.`,
+          });
+        }
+      }
+    }
+
     res.status(201).json(populatedProject);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

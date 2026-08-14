@@ -45,7 +45,10 @@ const createTask = async (req, res) => {
 
     // Notify assigned members
     if (assignees && assignees.length > 0) {
-      for (const recipientId of assignees) {
+      const recipients = assignees.filter(
+        (id) => id.toString() !== req.user._id.toString(),
+      );
+      for (const recipientId of recipients) {
         await createAndSendNotification(req, {
           recipient: recipientId,
           type: "TASK_ASSIGNED",
@@ -148,7 +151,9 @@ const updateTaskStatus = async (req, res) => {
           ...(updatedTask.assignees?.map((a) => a._id.toString()) || []),
           updatedTask.createdBy?._id?.toString(), // Use _id?.toString() for consistency
         ]),
-      ).filter(Boolean);
+      )
+        .filter(Boolean)
+        .filter((id) => id !== req.user._id.toString());
 
       for (const recipientId of recipients) {
         await createAndSendNotification(req, {
@@ -168,7 +173,9 @@ const updateTaskStatus = async (req, res) => {
           ...(updatedTask.assignees?.map((a) => a._id.toString()) || []),
           updatedTask.createdBy?._id?.toString(),
         ]),
-      ).filter(Boolean);
+      )
+        .filter(Boolean)
+        .filter((id) => id !== req.user._id.toString());
 
       for (const recipientId of recipients) {
         await createAndSendNotification(req, {
@@ -216,7 +223,9 @@ const updateTask = async (req, res) => {
     // Notify newly assigned members
     if (assignees) {
       const newlyAssigned = assignees.filter(
-        (id) => !previousAssignees.includes(id.toString()),
+        (id) =>
+          !previousAssignees.includes(id.toString()) &&
+          id.toString() !== req.user._id.toString(),
       );
       for (const recipientId of newlyAssigned) {
         await createAndSendNotification(req, {
@@ -236,7 +245,9 @@ const updateTask = async (req, res) => {
           ...(populated.assignees?.map((a) => a._id.toString()) || []),
           populated.createdBy?._id?.toString(), // Use _id?.toString() for consistency
         ]),
-      ).filter(Boolean);
+      )
+        .filter(Boolean)
+        .filter((id) => id !== req.user._id.toString());
 
       for (const recipientId of recipients) {
         await createAndSendNotification(req, {
@@ -256,7 +267,9 @@ const updateTask = async (req, res) => {
           ...(populated.assignees?.map((a) => a._id.toString()) || []),
           populated.createdBy?._id?.toString(),
         ]),
-      ).filter(Boolean);
+      )
+        .filter(Boolean)
+        .filter((id) => id !== req.user._id.toString());
 
       const formatStatus = (s) =>
         s

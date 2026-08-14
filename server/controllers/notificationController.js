@@ -54,8 +54,33 @@ const markAllAsRead = async (req, res) => {
   }
 };
 
+// @desc    Delete a notification
+// @route   DELETE /api/notifications/:id
+// @access  Private
+const deleteNotification = async (req, res) => {
+  try {
+    const notification = await Notification.findOne({
+      _id: req.params.id,
+      recipient: req.user._id,
+    });
+
+    if (!notification) {
+      // Return 404 even if it exists but doesn't belong to the user
+      // to avoid leaking information about other users' notifications.
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    await notification.deleteOne();
+
+    res.json({ message: "Notification removed" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   getUserNotifications,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
 };

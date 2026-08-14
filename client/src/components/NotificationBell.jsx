@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../context/NotificationContext";
-import { Bell, BellRing, Megaphone } from "lucide-react";
+import { Bell, BellRing, Megaphone, X } from "lucide-react";
 
 export const NotificationBell = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
-    useNotifications();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -74,7 +79,13 @@ export const NotificationBell = () => {
               notifications.map((n) => (
                 <div
                   key={n._id}
-                  onClick={() => !n.read && markAsRead(n._id)}
+                  onClick={(e) => {
+                    // Prevent marking as read if the delete button was clicked
+                    if (e.target.closest(".delete-notification-btn")) return;
+                    if (!n.read) {
+                      markAsRead(n._id);
+                    }
+                  }}
                   className={`p-3.5 transition flex items-start space-x-3 cursor-pointer ${
                     !n.read
                       ? "bg-indigo-50/50 hover:bg-indigo-50/80"
@@ -103,10 +114,20 @@ export const NotificationBell = () => {
                     </span>
                   </div>
 
-                  {/* Unread Status Dot */}
-                  {!n.read && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0 mt-2" />
-                  )}
+                  <div className="flex flex-col items-center ml-auto pl-2">
+                    {/* Unread Status Dot */}
+                    {!n.read && (
+                      <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0 mt-2 mb-2" />
+                    )}
+                    {/* Delete Button */}
+                    <button
+                      className="delete-notification-btn text-slate-300 hover:text-rose-500 transition-colors"
+                      onClick={() => deleteNotification(n._id)}
+                      title="Delete notification"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
