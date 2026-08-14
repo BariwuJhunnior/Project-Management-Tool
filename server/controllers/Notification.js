@@ -17,7 +17,7 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "TASK_ASSIGNED",
         "TASK_MOVED_DONE",
-        "TASK_STATUS_UPDATED", // Added this new type
+        "TASK_STATUS_UPDATED", // This is the required value
         "PROJECT_INVITE",
         "GENERAL",
       ],
