@@ -35,7 +35,7 @@ const createProject = async (req, res) => {
             recipient: memberId,
             type: "PROJECT_INVITE",
             project: populatedProject._id,
-            message: `You have been added to the project "${populatedProject.title}" by ${req.user.name}.`,
+            message: `You have been added to the project "${populatedProject.title}" by ${req.user.name} at: ${new Date().toLocaleTimeString()}.`,
           });
         }
       }

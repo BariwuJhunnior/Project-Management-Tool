@@ -54,7 +54,7 @@ const createTask = async (req, res) => {
           type: "TASK_ASSIGNED",
           task: task._id,
           project: projectId,
-          message: `You were assigned to task "${title}".`,
+          message: `You were assigned to task "${title}" by ${req.user.name} at: ${new Date().toLocaleTimeString()}.`,
         });
       }
     }
@@ -161,7 +161,7 @@ const updateTaskStatus = async (req, res) => {
           type: "TASK_MOVED_DONE",
           task: updatedTask._id,
           project: updatedTask.project,
-          message: `Task "${updatedTask.title}" has been moved to Done.`,
+          message: `Task "${updatedTask.title}" has been moved to Done by ${req.user.name} at: ${new Date().toLocaleTimeString()}.`,
         });
       }
     }
@@ -183,7 +183,7 @@ const updateTaskStatus = async (req, res) => {
           type: "TASK_STATUS_UPDATED", // New notification type
           task: updatedTask._id,
           project: updatedTask.project,
-          message: `Task "${updatedTask.title}" moved from ${formatStatus(previousStatus)} to ${formatStatus(status)}.`,
+          message: `Task "${updatedTask.title}" moved from ${formatStatus(previousStatus)} to ${formatStatus(status)} by ${req.user.name} at: ${new Date().toLocaleTimeString()}.`,
         });
       }
     }
@@ -233,7 +233,7 @@ const updateTask = async (req, res) => {
           type: "TASK_ASSIGNED",
           task: updatedTask._id,
           project: updatedTask.project,
-          message: `You were assigned to task "${updatedTask.title}".`,
+          message: `You were assigned to task "${updatedTask.title}" by ${req.user.name} at: ${new Date().toLocaleTimeString()}.`,
         });
       }
     }
@@ -255,7 +255,7 @@ const updateTask = async (req, res) => {
           type: "TASK_MOVED_DONE",
           task: populated._id,
           project: populated.project,
-          message: `Task "${populated.title}" has been moved to Done.`,
+          message: `Task "${populated.title}" has been moved to Done by ${req.user.name} at: ${new Date().toLocaleTimeString()}.`,
         });
       }
     }
@@ -284,7 +284,7 @@ const updateTask = async (req, res) => {
           type: "TASK_STATUS_UPDATED", // New notification type
           task: populated._id,
           project: populated.project,
-          message: `Task "${populated.title}" moved from ${formatStatus(previousStatus)} to ${formatStatus(status)}.`,
+          message: `Task "${populated.title}" moved from ${formatStatus(previousStatus)} to ${formatStatus(status)} by ${req.user.name} at: ${new Date().toLocaleTimeString()}.`,
         });
       }
     }
